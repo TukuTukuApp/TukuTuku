@@ -6,5 +6,6 @@ const db = String(process.env.DB_NAME);
 const username = String(process.env.DB_USERNAME);
 const password = String(process.env.DB_PASSWORD);
 const host = String(process.env.DB_HOST);
+const round = Number(process.env.HASH_ROUND);
 
-module.exports = { port, env, db, username, password, host };
+module.exports = { port, env, db, username, password, host, round };
