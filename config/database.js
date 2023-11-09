@@ -1,7 +1,5 @@
 const { db, username, password, host } = require("../src/config/vars");
 
-console.log(db, username, password, host);
-
 module.exports = {
   development: {
     username: username,
