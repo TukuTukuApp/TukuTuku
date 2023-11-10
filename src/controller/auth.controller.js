@@ -1,6 +1,6 @@
 const { user, token } = require("../models");
 const randomstring = require("randomstring");
-const bycrpt = require("bcrypt");
+const bcrypt = require("bcrypt");
 
 /**
  * Login Controller
@@ -27,7 +27,7 @@ async function login(req, res) {
     return;
   }
 
-  bycrpt.compare(password, getUser.password, async (err, result) => {
+  bcrypt.compare(password, getUser.password, async (err, result) => {
     if (err) {
       res.status(500).send({
         message: "Server Error",
@@ -89,4 +89,50 @@ async function register(req, res) {
   }
 }
 
-module.exports = { login, register };
+async function changePassword(req, res) {
+  const email = req.body.email;
+  const oldPassword = req.body.oldPassword;
+  const newPassword = req.body.newPassword;
+
+  if (!email || !oldPassword || !newPassword) {
+    res.status(400).send({
+      message: "Invalid Request",
+    });
+    return;
+  }
+
+  const getUser = await user.findOne({ where: { email: email } });
+  if (!getUser) {
+    res.status(401).send({
+      message: "Invalid Credential",
+    });
+    return;
+  }
+
+  bcrypt.compare(oldPassword, getUser.password, async (err, result) => {
+    if (err) {
+      res.status(500).send({
+        message: "Server Error",
+      });
+      return;
+    }
+    if (result) {
+      const newHashedPassword = await bcrypt.hash(
+        newPassword,
+        parseInt(process.env.HASH_ROUND)
+      );
+      getUser.password = newHashedPassword;
+      await getUser.save();
+      res.send({
+        message: "Password changed successfully",
+      });
+    } else {
+      res.status(401).send({
+        message: "Invalid Credential",
+      });
+    }
+    return;
+  });
+}
+
+module.exports = { login, register, changePassword };

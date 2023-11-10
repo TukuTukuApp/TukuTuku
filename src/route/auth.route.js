@@ -5,6 +5,6 @@ const router = new Router();
 
 router.post("/login", controller.auth.login);
 router.post("/register", controller.auth.register);
-// router.post("/forgot-password");
+router.post("/change-password", controller.auth.changePassword);
 
 module.exports = router;
