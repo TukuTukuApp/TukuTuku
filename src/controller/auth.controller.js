@@ -57,8 +57,9 @@ async function register(req, res) {
   const email = req.body.email;
   const password = req.body.password;
   const name = req.body.name;
+  const roleId = req.body.roleId;
 
-  if (!email || !password || !name) {
+  if ((!email || !password || !name, !roleId)) {
     res.status(400).send({
       message: "Invalid Request",
     });
@@ -76,6 +77,7 @@ async function register(req, res) {
     email,
     name,
     password,
+    roleId,
   });
 
   if (newUser.name) {
