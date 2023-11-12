@@ -10,6 +10,8 @@ module.exports = {
         price: faker.commerce.price({ min: 10000, max: 100000 }),
         createdAt: new Date(),
         updatedAt: new Date(),
+        category: faker.commerce.productAdjective(),
+        description: faker.commerce.productMaterial(),
       });
     }
   },
