@@ -17,4 +17,53 @@ async function getAllCart(req, res) {
   });
 }
 
-module.exports = { getAllCart };
+async function addCart(req, res) {
+  const newCart = req.body.item;
+  if (!newCart || !newCart.userId || !newCart.itemId) {
+    res.status(400).send({
+      message: "Invalid Request",
+    });
+    return;
+  }
+
+  const created = await cart.create(newCart);
+  if (!created) {
+    res.status(400).send({
+      message: "Failed to Request",
+    });
+    return;
+  }
+  res.send(created);
+}
+
+async function deleteCart(req, res) {
+  const cartId = req.params.id;
+  if (!cartId) {
+    res.status(400).send({
+      message: "Invalid Request",
+    });
+    return;
+  }
+
+  const findCart = await cart.findOne({ where: { id: cartId } });
+  if (!findCart) {
+    res.status(404).send({
+      message: "Invalid Item",
+    });
+    return;
+  }
+
+  const deleted = await cart.destroy({ where: { id: cartId } });
+  if (!deleted) {
+    res.status(400).send({
+      message: "Failed To Request",
+    });
+    return;
+  }
+
+  res.send({
+    status: "Success",
+  });
+}
+
+module.exports = { getAllCart, addCart, deleteCart };

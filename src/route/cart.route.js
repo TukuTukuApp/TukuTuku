@@ -12,4 +12,18 @@ router.get(
   controller.cart.getAllCart
 );
 
+router.post(
+  "/",
+  middleware.token.verifyToken,
+  middleware.authorization.verifyAuthorization(permissions.CREATE_CART),
+  controller.cart.addCart
+);
+
+router.delete(
+  "/:id",
+  middleware.token.verifyToken,
+  middleware.authorization.verifyAuthorization(permissions.DELETE_CART),
+  controller.cart.deleteCart
+);
+
 module.exports = router;
