@@ -19,7 +19,6 @@ module.exports = {
     const permissionRole = [];
     for (const Role in permissionAssignment) {
       for (const Permission of permissionAssignment[Role]) {
-        console.log(Role);
         const roleId = await role
           .findOne({ where: { name: Role } })
           .then((role) => role.id);

@@ -34,7 +34,13 @@ async function getItem(req, res) {
 
 async function createItem(req, res) {
   const newItem = req.body.item;
-  if (!newItem || !newItem.name || !newItem.price) {
+  if (
+    !newItem ||
+    !newItem.name ||
+    !newItem.price ||
+    !newItem.category ||
+    !newItem.description
+  ) {
     res.status(400).send({
       message: "Invalid Request",
     });

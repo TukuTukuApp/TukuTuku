@@ -7,4 +7,5 @@ module.exports = {
   UPDATE_ITEM: "update_item",
   DELETE_ITEM: "delete_item",
   DELETE_CART: "delete_cart",
+  CREATE_ORDER: "create_order",
 };
