@@ -22,6 +22,7 @@ const verifyAuthorization = (permissionLevel) => {
     for (let i = 0; i < getPermissionRole.length; i++) {
       if (getPermissionRole[i].permissionId === getPermission.id) {
         isAllowed = true;
+        break;
       }
     }
 

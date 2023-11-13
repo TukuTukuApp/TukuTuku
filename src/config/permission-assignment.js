@@ -13,5 +13,6 @@ module.exports = {
     permission.READ,
     permission.UPDATE_CART,
     permission.DELETE_CART,
+    permission.CREATE_ORDER,
   ],
 };
