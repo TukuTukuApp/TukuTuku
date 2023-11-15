@@ -8,4 +8,8 @@ module.exports = {
   DELETE_ITEM: "delete_item",
   DELETE_CART: "delete_cart",
   CREATE_ORDER: "create_order",
+  PAY_TRANSACTION: "pay_transaction",
+  VERIFY_PAYMENT: "verify_payment",
+  UPDATE_ORDER_STATUS: "update_order_status",
+  DONE_ORDER: "done_order",
 };

@@ -1,5 +1,5 @@
 const Express = require("express");
-const { cart, transaction, payment } = require("../models");
+const { cart, transaction, payment, cartItem, item } = require("../models");
 const transactionStatus = require("../constants/transactionStatus");
 
 /**
@@ -8,9 +8,40 @@ const transactionStatus = require("../constants/transactionStatus");
  */
 
 async function createTransaction(req, res) {
-  const items = await cart.findAll({ where: { userId: req.user.id } });
-  const order = JSON.stringify(items);
+  console.log("user id : ", req.user.id);
+  const userCart = await cart.findOne({
+    where: { userId: req.user.id, orderCreatedAt: null },
+  });
+
+  if (!userCart) {
+    res.status(400).send({
+      message: "cart not found",
+    });
+    return;
+  }
+
+  console.log("user carts :", userCart);
+
   const date = new Date();
+  const orderItems = await cartItem.findAll({
+    where: { cartId: userCart.id },
+  });
+
+  console.log("order item : ", orderItems);
+
+  let userItems = [];
+  for (let i = 0; i < orderItems.length; i++) {
+    const getItem = await item.findByPk(orderItems[i].itemId);
+    userItems.push({
+      item: getItem,
+      amount: orderItems[i].amount,
+    });
+  }
+
+  let totalPrice = 0;
+  for (let i = 0; i < userItems.length; i++) {
+    totalPrice += userItems[i].item.price * userItems[i].amount;
+  }
 
   const newTransaction = {
     transactionCode: `${date.getDay()}${date.getMonth()}${date.getFullYear()}/${
@@ -19,12 +50,11 @@ async function createTransaction(req, res) {
     date: date,
     createdAt: date,
     updatedAt: date,
-    items: order,
+    cartId: userCart.id,
+    totalPrice: parseInt(totalPrice),
     status: transactionStatus.VERIFY_PAYMENT,
     userId: req.user.id,
   };
-
-  console.log(newTransaction);
 
   try {
     const createTransaction = await transaction.create(newTransaction);
@@ -35,9 +65,16 @@ async function createTransaction(req, res) {
       return;
     }
 
-    await cart.destroy({ where: { userId: req.user.id } });
+    await userCart.update({ orderCreatedAt: date });
 
-    res.send(createTransaction);
+    res.send({
+      transaction: {
+        transactionCode: createTransaction.transactionCode,
+        date: date,
+        totalPrice,
+        items: userItems,
+      },
+    });
   } catch (error) {
     console.log(error);
     res.status(500).send({
