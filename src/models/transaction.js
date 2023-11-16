@@ -15,7 +15,6 @@ module.exports = (sequelize, DataTypes) => {
     {
       transactionCode: DataTypes.STRING,
       date: DataTypes.DATE,
-      items: DataTypes.TEXT,
       userId: DataTypes.INTEGER,
       status: DataTypes.STRING,
       cartId: DataTypes.INTEGER,

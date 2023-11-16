@@ -1,6 +1,7 @@
 const Express = require("express");
 const { cart, transaction, payment, cartItem, item } = require("../models");
 const transactionStatus = require("../constants/transactionStatus");
+const permission = require("../constants/permission");
 
 /**
  * @param {Express.Request} req
@@ -23,19 +24,14 @@ async function createTransaction(req, res) {
   console.log("user carts :", userCart);
 
   const date = new Date();
-  const orderItems = await cartItem.findAll({
-    where: { cartId: userCart.id },
-  });
 
-  console.log("order item : ", orderItems);
+  let userItems = await getTransactionItems(userCart.id);
 
-  let userItems = [];
-  for (let i = 0; i < orderItems.length; i++) {
-    const getItem = await item.findByPk(orderItems[i].itemId);
-    userItems.push({
-      item: getItem,
-      amount: orderItems[i].amount,
+  if (userItems.length === 0) {
+    res.status(400).send({
+      message: "No item on cart",
     });
+    return;
   }
 
   let totalPrice = 0;
@@ -46,7 +42,7 @@ async function createTransaction(req, res) {
   const newTransaction = {
     transactionCode: `${date.getDay()}${date.getMonth()}${date.getFullYear()}/${
       req.user.id
-    }/${date.getMilliseconds()}`,
+    }/${date.getMilliseconds()}/${date.getHours()}${date.getMinutes()}`,
     date: date,
     createdAt: date,
     updatedAt: date,
@@ -128,10 +124,12 @@ async function transactionPayment(req, res) {
 }
 
 async function verifyPayment(req, res) {
+  console.log(req);
   if (!req.body.paymentCode) {
     res.status(400).send({
       message: "Missing Payment Code",
     });
+    return;
   }
 
   const getPayment = await payment.findOne({
@@ -164,6 +162,117 @@ async function verifyPayment(req, res) {
   res.send(getTransaction);
 }
 
+async function updateOrderStatus(req, res) {
+  if (!req.body.status || !req.body.transactionCode) {
+    res.status("400").send({
+      message: "Missing Status",
+    });
+    return;
+  }
+
+  let orderStatus = Object.keys(transactionStatus);
+
+  if (
+    !orderStatus.includes(req.body.status) ||
+    orderStatus[0] === req.body.status || // ordersStatus 3 === 'Verify Payment' condition where order created
+    orderStatus[3] === req.body.status // ordersStatus 3 === 'Done' can only be done by users
+  ) {
+    res.status(400).send({
+      message: "Invalid Status",
+    });
+    return;
+  }
+
+  const userTransaction = await transaction.update(
+    { status: transactionStatus[req.body.status] },
+    {
+      where: { transactionCode: req.body.transactionCode },
+    }
+  );
+
+  if (userTransaction[0] === 0) {
+    res.status(400).send({
+      message: "Invalid Request",
+    });
+    return;
+  }
+
+  const getUserTransaction = await transaction.findOne({
+    where: { transactionCode: req.body.transactionCode },
+  });
+
+  const userItems = await getTransactionItems(getUserTransaction.cartId);
+
+  res.send({
+    transaction: {
+      transactionCode: getUserTransaction.transactionCode,
+      status: getUserTransaction.status,
+      totalPrice: getUserTransaction.totalPrice,
+      items: userItems,
+    },
+  });
+}
+
+async function getUserTransaction(req, res) {
+  const getTransaction = await transaction.findAll({
+    where: { userId: req.user.id },
+  });
+
+  console.log(getTransaction);
+  let userTransaction = [];
+  for (let i = 0; i < getTransaction.length; i++) {
+    const userItems = await getTransactionItems(getTransaction[i].cartId);
+    userTransaction.push({
+      transactionCode: getTransaction[i].transactionCode,
+      status: getTransaction[i].status,
+      totalPrice: getTransaction[i].totalPrice,
+      items: userItems,
+    });
+  }
+
+  res.send(userTransaction);
+}
+
+async function endOrder(req, res) {
+  if (!req.body.transactionCode) {
+    res.status(400).send({
+      message: "Missing transaction code",
+    });
+    return;
+  }
+
+  const getTransaction = await transaction.findOne({
+    where: { transactionCode: req.body.transactionCode },
+  });
+
+  if (!getTransaction) {
+    res.status(400).send({
+      message: "Invalid transaction code",
+    });
+    return;
+  }
+
+  const update = await transaction.update(
+    { status: transactionStatus.DONE },
+    { where: { transactionCode: req.body.transactionCode } }
+  );
+
+  if (update[0] === 0) {
+    res.status(400).send({
+      message: "Invalid transaction code",
+    });
+    return;
+  }
+
+  const userItems = await getTransactionItems(getTransaction.cartId);
+  res.send({
+    transactionCode: getTransaction.transactionCode,
+    status: transactionStatus.DONE,
+    totalPrice: getTransaction.totalPrice,
+    items: userItems,
+  });
+}
+
 const generateTransactionId = () => {
   const characters =
     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
@@ -176,4 +285,29 @@ const generateTransactionId = () => {
   return transactionId;
 };
 
-module.exports = { createTransaction, transactionPayment, verifyPayment };
+const getTransactionItems = async (transactionCartId) => {
+  const orderItems = await cartItem.findAll({
+    where: { cartId: transactionCartId },
+  });
+
+  let userItems = [];
+
+  for (let i = 0; i < orderItems.length; i++) {
+    const getItem = await item.findByPk(orderItems[i].itemId);
+    userItems.push({
+      item: getItem,
+      amount: orderItems[i].amount,
+    });
+  }
+
+  return userItems;
+};
+
+module.exports = {
+  createTransaction,
+  transactionPayment,
+  verifyPayment,
+  updateOrderStatus,
+  getUserTransaction,
+  endOrder,
+};

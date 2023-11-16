@@ -26,4 +26,24 @@ router.post(
   controller.transaction.verifyPayment
 );
 
+router.post(
+  "/update-order",
+  middleware.token.verifyToken,
+  middleware.authorization.verifyAuthorization(permissions.UPDATE_ORDER_STATUS),
+  controller.transaction.updateOrderStatus
+);
+
+router.post(
+  "/done-order",
+  middleware.token.verifyToken,
+  middleware.authorization.verifyAuthorization(permissions.DONE_ORDER),
+  controller.transaction.endOrder
+);
+
+router.get(
+  "/",
+  middleware.token.verifyToken,
+  controller.transaction.getUserTransaction
+);
+
 module.exports = router;
